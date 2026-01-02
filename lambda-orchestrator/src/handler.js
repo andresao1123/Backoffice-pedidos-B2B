@@ -116,8 +116,8 @@ export const createAndConfirmOrder = async (event) => {
                     }
                 }
             );
-            console.log(confirmResponse.data.data)
-            confirmedOrder = confirmResponse.data.data;
+            console.log(confirmResponse)
+            confirmedOrder = confirmResponse.data;
         } catch (error) {
             try {
                 await axios.post(`${ORDERS_API}/orders/${order.id}/cancel`);
