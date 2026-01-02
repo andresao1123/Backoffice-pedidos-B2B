@@ -3,7 +3,7 @@ service: orders-orchestrator
 provider:
   name: aws
   runtime: nodejs22.x
-  region: us-east-1
+  region: us-east-2
   environment:
     CUSTOMERS_API_BASE: ${env:CUSTOMERS_API_BASE}
     ORDERS_API_BASE: ${env:ORDERS_API_BASE}
