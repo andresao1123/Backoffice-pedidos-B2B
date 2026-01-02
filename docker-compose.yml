@@ -87,6 +87,31 @@ services:
       - ./orders-api/src:/app/src:ro
       - ./db:/app/db:ro
 
+  lambda-orchestrator:
+    build:
+      context: ./lambda-orchestrator
+      dockerfile: Dockerfile
+    container_name: orders-system-orchestrator
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      CUSTOMERS_API_BASE: http://customers-api:3001
+      ORDERS_API_BASE: http://orders-api:3002
+      SERVICE_TOKEN: 151cbcf56116e0236bd247ab1f8702cab277b6569116a2bbd4561a7798ab3fec
+    depends_on:
+      - customers-api
+      - orders-api
+    networks:
+      - orders-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - ./lambda-orchestrator/src:/app/src:ro
 
   adminer:
     image: adminer:latest
