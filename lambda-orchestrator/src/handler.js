@@ -54,7 +54,7 @@ export const createAndConfirmOrder = async (event) => {
                     }
                 }
             );
-            console.log(customerResponse)
+            console.log(customerResponse.data.data)
             customer = customerResponse.data.data;
         } catch (error) {
             return {
@@ -116,7 +116,8 @@ export const createAndConfirmOrder = async (event) => {
                     }
                 }
             );
-            confirmedOrder = confirmResponse.data;
+            console.log(confirmResponse.data.data)
+            confirmedOrder = confirmResponse.data.data;
         } catch (error) {
             try {
                 await axios.post(`${ORDERS_API}/orders/${order.id}/cancel`);
