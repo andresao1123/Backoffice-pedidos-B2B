@@ -13,6 +13,13 @@ app.get('/', (req, res) => {
     res.json({ message: 'Welcome to the Orders API' });
 });
 
+router.get('/health', (req, res) => {
+    return res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString()
+    });
+});
+
 app.use('/products', products_router);
 app.use('/orders', orders_router);
 

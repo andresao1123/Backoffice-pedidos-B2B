@@ -11,6 +11,13 @@ app.get('/', (req, res) => {
     res.json({ message: 'Welcome to the Customers API' });
 });
 
+router.get('/health', (req, res) => {
+    return res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString()
+    });
+});
+
 app.use(user_router);
 
 // Start the server
