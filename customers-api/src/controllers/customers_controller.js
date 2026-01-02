@@ -21,18 +21,16 @@ export const getCustomers = async (req, res) => {
         return res.status(400).json({ error: 'limit debe ser un número positivo' });
     }
 
-    const [customers] = await db.query(
-        `
-    SELECT * FROM customers
-    ${where} and deleted_at IS NULL
-    ORDER BY id ASC
-    LIMIT ?
-    `,
-        [...params, limitNumber]
+    const [rows] = await db.query(
+        `SELECT * FROM customers ${where} AND deleted_at IS NULL 
+     ORDER BY id ASC LIMIT ?`,
+        [...params, limitNumber + 1] // Pedimos uno extra
     );
 
-    const nextCursor =
-        customers.length > 0 ? customers[customers.length - 1].id : null;
+    const hasMore = rows.length > limitNumber;
+    const customers = hasMore ? rows.slice(0, limitNumber) : rows;
+
+    const nextCursor = hasMore ? customers[customers.length - 1].id : null;
 
     res.json({
         data: customers,
