@@ -59,6 +59,6 @@ CREATE TABLE IF NOT EXISTS idempotency_keys(
     `status` ENUM('PROCESSING','SUCCESS','FAILED') not null,
     response_body JSON not null,
     created_at DATETIME not null default NOW(),
-    expires_at DATETIME not null
+    expires_at DATETIME not null,
     UNIQUE KEY uniq_idempotency (`key`, target_type)
 );
