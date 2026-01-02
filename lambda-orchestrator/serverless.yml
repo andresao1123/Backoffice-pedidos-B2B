@@ -17,6 +17,12 @@ functions:
           path: orchestrator/create-and-confirm-order
           method: post
           cors: true
+  health:
+    handler: src/handler.health
+    events:
+      - http:
+          path: health
+          method: get
 
 plugins:
   - serverless-offline
@@ -24,3 +30,4 @@ plugins:
 custom:
   serverless-offline:
     httpPort: ${env:PORT, 3000}
+    noPrependStageInUrl: true

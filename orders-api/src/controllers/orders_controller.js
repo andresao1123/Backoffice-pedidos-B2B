@@ -13,34 +13,39 @@ export const createOrder = async (req, res) => {
     }
 
     var validItems = items.every(item => {
-        return typeof item.product_id === 'number' && typeof item.quantity === 'number' && item.quantity > 0 && item.product_id > 0
+        return item.qty > 0 && item.product_id > 0
     })
 
     if (!validItems) {
-        return res.status(400).json({ error: 'todos los items deben ser numeros enteros y tener product_id y quantity mayores a 0' })
+        return res.status(400).json({ error: 'todos los items deben tener product_id y quantity mayores a 0' })
     }
 
-    const customerResponse = await fetch(
-        `http://${process.env.CUSTOMERS_API_BASE}/internal/customers/${customer_id}`,
-        {
-            headers: {
-                'Authorization': `Bearer ${process.env.SERVICE_TOKEN}`
+    let customerResponse;
+    try {
+        customerResponse = await fetch(
+            `${process.env.CUSTOMERS_API_BASE}/internal/customers/${customer_id}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${process.env.SERVICE_TOKEN}`
+                }
             }
-        }
-    );
-
-    if (!customerResponse.ok) {
-        return res.status(404).json({ error: 'Cliente no encontrado' });
+        );
+    } catch (err) {
+        console.error('Error llamando Customers API:', err.message);
+        return res.status(502).json({
+            error: 'Customers service unavailable'
+        });
     }
 
     await db.query('START TRANSACTION');
 
     try {
         for (const item of items) {
-            const [product] = await db.query(
+            const [rows] = await db.query(
                 'SELECT id, price_cents, stock FROM products WHERE id = ? FOR UPDATE',
                 [item.product_id]
             );
+            const product = rows[0];
 
             if (!product) {
                 throw new Error(`Producto ${item.product_id} no existe`);
@@ -55,10 +60,11 @@ export const createOrder = async (req, res) => {
         const orderItemsData = [];
 
         for (const item of items) {
-            const [product] = await db.query(
+            const [rows] = await db.query(
                 'SELECT price_cents FROM products WHERE id = ?',
                 [item.product_id]
             );
+            const product = rows[0];
 
             const subtotal = product.price_cents * item.qty;
             total_cents += subtotal;
@@ -123,7 +129,7 @@ export const confirmOrder = async (req, res) => {
 
     const [existingKey] = await db.query(
         `SELECT * FROM idempotency_keys 
-         WHERE key = ? AND target_type = 'order_confirm' AND target_id = ?`,
+         WHERE \`key\` = ? AND target_type = 'order_confirm' AND target_id = ?`,
         [idempotencyKey, orderId]
     );
 
@@ -132,22 +138,23 @@ export const confirmOrder = async (req, res) => {
         return res.status(200).json(cachedResponse);
     }
     if (existingKey && existingKey.status === 'FAILED') {
-        await db.query('DELETE FROM idempotency_keys WHERE key = ?', [idempotencyKey]);
+        await db.query('DELETE FROM idempotency_keys WHERE `key` = ?', [idempotencyKey]);
     }
 
     await db.query(
         `INSERT INTO idempotency_keys 
-         (key, target_type, target_id, status, created_at, expires_at) 
-         VALUES (?, 'order_confirm', ?, 'PROCESSING', NOW(), DATE_ADD(NOW(), INTERVAL 24 HOUR))`,
+         (\`key\`, target_type, target_id, status, response_body, created_at, expires_at) 
+         VALUES (?, 'order_confirm', ?, 'PROCESSING', '{}', NOW(), DATE_ADD(NOW(), INTERVAL 24 HOUR))`,
         [idempotencyKey, orderId]
     );
     await db.query('START TRANSACTION');
 
     try {
-        const [order] = await db.query(
+        const [rows] = await db.query(
             'SELECT * FROM orders WHERE id = ? FOR UPDATE',
             [orderId]
         );
+        const order = rows[0];
 
         if (!order) {
             await db.query('ROLLBACK');
@@ -155,7 +162,7 @@ export const confirmOrder = async (req, res) => {
             await db.query(
                 `UPDATE idempotency_keys 
                 SET status = 'FAILED', response_body = ? 
-                WHERE key = ?`,
+                WHERE \`key\` = ?`,
                 [JSON.stringify({ error: 'Orden no encontrada' }), idempotencyKey]
             );
             return res.status(404).json({ error: 'Orden no encontrada' });
@@ -165,7 +172,7 @@ export const confirmOrder = async (req, res) => {
         if (order.status !== 'CREATED') {
             await db.query('ROLLBACK');
             await db.query(
-                `UPDATE idempotency_keys SET status = 'FAILED', response_body = ? WHERE key = ?`,
+                `UPDATE idempotency_keys SET status = 'FAILED', response_body = ? WHERE \`key\` = ?`,
                 [JSON.stringify({ error: 'Orden no encontrada' }), idempotencyKey]
             );
             return res.status(409).json({ error: `Orden ya está en estado ${order.status}` });
@@ -192,7 +199,7 @@ export const confirmOrder = async (req, res) => {
         await db.query(
             `UPDATE idempotency_keys 
             SET status = 'SUCCESS', response_body = ? 
-            WHERE key = ?`,
+            WHERE \`key\` = ?`,
             [JSON.stringify(response), idempotencyKey]
         );
 
@@ -206,7 +213,7 @@ export const confirmOrder = async (req, res) => {
         await db.query(
             `UPDATE idempotency_keys 
             SET status = 'FAILED', response_body = ? 
-            WHERE key = ?`,
+            WHERE \`key\` = ?`,
             [JSON.stringify({ error: error.message }), idempotencyKey]
         );
 
@@ -222,10 +229,11 @@ export const cancelOrder = async (req, res) => {
         return res.status(400).json({ error: 'ID de orden requerido' });
     }
 
-    const [order] = await db.query(
+    const [rows] = await db.query(
         'SELECT * FROM orders WHERE id = ?',
         [orderId]
     );
+    const order = rows[0];
 
     if (!order) {
         return res.status(404).json({ error: 'Orden no encontrada' });
@@ -344,6 +352,11 @@ export const listOrders = async (req, res) => {
         params.push(Number(cursor));
     }
 
+    const limitNumber = Number(limit);
+    if (isNaN(limitNumber) || limitNumber <= 0) {
+        return res.status(400).json({ error: 'limit debe ser un número positivo' });
+    }
+
     const [orders] = await db.query(
         `
     SELECT * FROM orders
@@ -351,7 +364,7 @@ export const listOrders = async (req, res) => {
     ORDER BY id ASC
     LIMIT ?
     `,
-        [...params, limit]
+        [...params, limitNumber]
     );
 
     const nextCursor =

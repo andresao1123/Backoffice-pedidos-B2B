@@ -17,6 +17,12 @@ export const getProducts = async (req, res) => {
         params.push(Number(cursor));
     }
 
+    const limitNumber = Number(limit);
+    if (isNaN(limitNumber) || limitNumber <= 0) {
+        return res.status(400).json({ error: 'limit debe ser un número positivo' });
+    }
+
+
     const [products] = await db.query(
         `
     SELECT * FROM products
@@ -24,7 +30,7 @@ export const getProducts = async (req, res) => {
     ORDER BY id ASC
     LIMIT ?
     `,
-        [...params, limit]
+        [...params, limitNumber]
     );
 
     const nextCursor =
@@ -60,7 +66,7 @@ export const getProduct = async (req, res) => {
 
     res.json({
         success: true,
-        data: product
+        data: product[0]
     });
 };
 

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
@@ -41,12 +39,9 @@ services:
       DB_USER: root
       DB_PASSWORD: root
       DB_NAME: orders_db 
-      JWT_SECRET: mi-secreto-super-seguro-cambiar-en-produccion-123456
-      JWT_EXPIRES_IN: 24h
-      SERVICE_TOKEN: secret-service-token-change-in-production
+      SERVICE_TOKEN: 151cbcf56116e0236bd247ab1f8702cab277b6569116a2bbd4561a7798ab3fec
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql
     networks:
       - orders-network
     healthcheck:
@@ -74,14 +69,11 @@ services:
       DB_USER: root
       DB_PASSWORD: root
       DB_NAME: orders_db
-      JWT_SECRET: mi-secreto-super-seguro-cambiar-en-produccion-123456
-      SERVICE_TOKEN: secret-service-token-change-in-production
+      SERVICE_TOKEN: 151cbcf56116e0236bd247ab1f8702cab277b6569116a2bbd4561a7798ab3fec
       CUSTOMERS_API_BASE: http://customers-api:3001
     depends_on:
-      mysql:
-        condition: service_healthy
-      customers-api:
-        condition: service_healthy
+      - mysql
+      - customers-api
     networks:
       - orders-network
     healthcheck:
@@ -90,8 +82,36 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    command: sh -c "npm run migrate && npm run seed && npm start"
     volumes:
       - ./orders-api/src:/app/src:ro
+      - ./db:/app/db:ro
+
+  lambda-orchestrator:
+    build:
+      context: ./lambda-orchestrator
+      dockerfile: Dockerfile
+    container_name: orders-system-orchestrator
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      CUSTOMERS_API_BASE: http://customers-api:3001
+      ORDERS_API_BASE: http://orders-api:3002
+      SERVICE_TOKEN: 151cbcf56116e0236bd247ab1f8702cab277b6569116a2bbd4561a7798ab3fec
+    depends_on:
+      - customers-api
+      - orders-api
+    networks:
+      - orders-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - ./lambda-orchestrator/src:/app/src:ro
 
   adminer:
     image: adminer:latest

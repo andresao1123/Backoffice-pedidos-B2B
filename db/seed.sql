@@ -1,8 +1,5 @@
 use orders_db;
 
--- ============================================
--- 1. USUARIOS (para login con JWT)
--- ============================================
 -- Password para admin: "admin123"
 -- Hash generado con bcrypt: $2a$10$rZ7LhX9K5vXxK5vXxK5vXeO8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q
 
@@ -17,9 +14,6 @@ INSERT INTO users (name, email, password_hash, role) VALUES
 ('Operador Ventas', 'ventas@backoffice.com', '$2b$10$QGMr95IJzRYg.YfES6kyZeu2ui2O9zOIbUhrbFSl36L7wwovnVLa6', 'operator'),
 ('Operador Almacén', 'almacen@backoffice.com', '$2b$10$SlHfNEyXuSQq6jpx83T8tOESpWK431nq.AusH6DVER3E5RKLcXMPG', 'operator');
 
--- ============================================
--- 2. CLIENTES
--- ============================================
 
 INSERT INTO customers (name, email, phone) VALUES
 ('ACME Corporation', 'compras@acme.com', '+593-2-2345678'),
@@ -31,9 +25,6 @@ INSERT INTO customers (name, email, phone) VALUES
 ('Ferretería Industrial', 'pedidos@ferrind.com', '+593-7-2901234'),
 ('Tiendas La Económica', 'ordenes@laeconomica.ec', '+593-2-3012345');
 
--- ============================================
--- 3. PRODUCTOS
--- ============================================
 
 
 INSERT INTO products (sku, name, price_cents, stock) VALUES
@@ -108,7 +99,6 @@ INSERT INTO order_items (order_id, product_id, qty, unit_price_cents, subtotal_c
 (3, 7, 1, 32900, 32900),   -- Tablet
 (3, 14, 14, 650, 9100);    -- Papel Bond x14
 
--- Orden 4: CANCELED
 INSERT INTO orders (customer_id, status, total_cents, created_at) VALUES
 (4, 'CANCELED', 35800, NOW() - INTERVAL 1 DAY);
 

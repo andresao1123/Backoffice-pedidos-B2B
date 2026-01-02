@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS customers(
 	id int not null primary key auto_increment,
     `name` varchar(100) not null,
     email varchar(100) unique not null,
-    phone varchar(14) not null,
+    phone varchar(100) not null,
     deleted_at DATETIME null
 );
 
@@ -54,10 +54,11 @@ CREATE TABLE IF NOT EXISTS order_items(
 CREATE TABLE IF NOT EXISTS idempotency_keys(
 	ID int not null primary key auto_increment,
     `key` varchar(100) not null,
-    target_type ENUM('order_confirm') not null,
+    target_type ENUM('order_create', 'order_confirm') not null,
     target_id int not null,
     `status` ENUM('PROCESSING','SUCCESS','FAILED') not null,
     response_body JSON not null,
     created_at DATETIME not null default NOW(),
     expires_at DATETIME not null
+    UNIQUE KEY uniq_idempotency (`key`, target_type)
 );

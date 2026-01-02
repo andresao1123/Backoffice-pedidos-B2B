@@ -5,11 +5,12 @@ const CUSTOMERS_API = process.env.CUSTOMERS_API_BASE || 'http://localhost:3001';
 const ORDERS_API = process.env.ORDERS_API_BASE || 'http://localhost:3002';
 const SERVICE_TOKEN = process.env.SERVICE_TOKEN || 'secret-service-token';
 
-exports.createAndConfirmOrder = async (event) => {
+export const createAndConfirmOrder = async (event) => {
     try {
         const body = JSON.parse(event.body);
         const { customer_id, items, idempotency_key } = body;
         let { correlation_id } = body;
+
 
         if (!correlation_id) {
             correlation_id = uuidv4();
@@ -41,6 +42,8 @@ exports.createAndConfirmOrder = async (event) => {
 
         console.log(`[${correlation_id}] Validando cliente...`);
 
+        console.log(`${CUSTOMERS_API}/internal/customers/${customer_id}`);
+
         let customer;
         try {
             const customerResponse = await axios.get(
@@ -51,7 +54,8 @@ exports.createAndConfirmOrder = async (event) => {
                     }
                 }
             );
-            customer = customerResponse.data;
+            console.log(customerResponse)
+            customer = customerResponse.data.data;
         } catch (error) {
             return {
                 statusCode: 404,
@@ -172,4 +176,11 @@ exports.createAndConfirmOrder = async (event) => {
             })
         };
     }
+};
+
+export const health = async (event) => {
+    return {
+        statusCode: 200,
+        body: JSON.stringify({ status: 'ok' })
+    };
 };

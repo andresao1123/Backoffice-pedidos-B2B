@@ -16,6 +16,11 @@ export const getCustomers = async (req, res) => {
         params.push(Number(cursor));
     }
 
+    const limitNumber = Number(limit);
+    if (isNaN(limitNumber) || limitNumber <= 0) {
+        return res.status(400).json({ error: 'limit debe ser un número positivo' });
+    }
+
     const [customers] = await db.query(
         `
     SELECT * FROM customers
@@ -23,7 +28,7 @@ export const getCustomers = async (req, res) => {
     ORDER BY id ASC
     LIMIT ?
     `,
-        [...params, limit]
+        [...params, limitNumber]
     );
 
     const nextCursor =
@@ -86,18 +91,19 @@ export const getCustomer = async (req, res) => {
         });
     }
 
-    const [customer] = await db.query(
+    const [rows] = await db.query(
         'SELECT * FROM customers WHERE id = ? and deleted_at IS NULL',
         [customerId]
     );
 
-    if (!customer) {
+    if (rows.length === 0) {
         return res.status(404).json({
             success: false,
             error: 'Customer not found'
         });
     }
 
+    const customer = rows[0];
     delete customer.deleted_at;
 
     res.json({
