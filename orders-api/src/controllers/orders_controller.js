@@ -127,11 +127,13 @@ export const confirmOrder = async (req, res) => {
     const orderId = req.params.id;
 
 
-    const [existingKey] = await db.query(
+    const [rows] = await db.query(
         `SELECT * FROM idempotency_keys 
          WHERE \`key\` = ? AND target_type = 'order_confirm' AND target_id = ?`,
         [idempotencyKey, orderId]
     );
+
+    const existingKey = rows[0];
 
     if (existingKey && existingKey.status === 'SUCCESS') {
         const cachedResponse = JSON.parse(existingKey.response_body);
