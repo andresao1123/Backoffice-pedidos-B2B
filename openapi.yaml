@@ -1,0 +1,1091 @@
+openapi: 3.0.0
+info:
+  title: Orders System API
+  description: Documentación de las APIs para sistema de ordenes B2B para los servicios de Orders, Customers y Lambda Orchestrator.
+  version: 1.0.0
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Customer:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sku:
+          type: string
+        price_cents:
+          type: integer
+        stock:
+          type: integer
+    OrderItemInput:
+      type: object
+      required:
+        - product_id
+        - quantity
+      properties:
+        product_id:
+          type: integer
+        quantity:
+          type: integer
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        customer_id:
+          type: integer
+        status:
+          type: string
+          enum: [CREATED, CONFIRMED, CANCELED]
+        total_cents:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              product_id: 
+                type: integer
+              qty:
+                type: integer
+              unit_price_cents:
+                type: integer
+              subtotal_cents:
+                type: integer
+
+paths:
+  /customers:
+    servers:
+      - url: http://localhost:3001
+        description: Customers API
+    get:
+      summary: Obtiene la lista de clientes
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: cursor
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Lista de clientes obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: "ACME Corp"
+                        email:
+                          type: string
+                          example: "compras@acme.com"
+                        phone:
+                          type: string
+                          example: "+593-2-2345678"
+                  next_cursor:
+                    type: integer
+                    nullable: true
+                    example: 10
+              example:
+                data:
+                  - id: 1
+                    name: "ACME Corp"
+                    email: "compras@acme.com"
+                    phone: "+593-2-2345678"
+                next_cursor: 10
+    post:
+      summary: Crea un cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - phone
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '201':
+          description: Cliente creado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "ACME Corp"
+                      email:
+                        type: string
+                        example: "compras@acme.com"
+                      phone:
+                        type: string
+                        example: "+593-2-2345678"
+              example:
+                success: true
+                data:
+                  id: 1
+                  name: "ACME Corp"
+                  email: "compras@acme.com"
+                  phone: "+593-2-2345678"
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Invalid input"
+              example:
+                success: false
+                error: "Invalid input"
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Email already exists"
+              example:
+                success: false
+                error: "Email already exists"
+
+  /customers/{id}:
+    servers:
+      - url: http://localhost:3001
+        description: Customers API
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtiene un cliente por id
+      responses:
+        '200':
+          description: Detalles del cliente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  name:
+                    type: string
+                    example: "ACME Corp"
+                  email:
+                    type: string
+                    example: "compras@acme.com"
+                  phone:
+                    type: string
+                    example: "+593-2-2345678"
+              example:
+                id: 1
+                name: "ACME Corp"
+                email: "compras@acme.com"
+                phone: "+593-2-2345678"
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Customer not found"
+              example:
+                success: false
+                error: "Customer not found"
+    put:
+      summary: Actualiza un cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: Cliente actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "ACME Corp"
+                      email:
+                        type: string
+                        example: "compras@acme.com"
+                      phone:
+                        type: string
+                        example: "+593-2-2345678"
+              example:
+                success: true
+                data:
+                  id: 1
+                  name: "ACME Corp"
+                  email: "compras@acme.com"
+                  phone: "+593-2-2345678"
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Cliente no encontrado"
+              example:
+                success: false
+                error: "Cliente no encontrado"
+    delete:
+      summary: Elimina un cliente (soft delete)
+      responses:
+        '200':
+          description: Cliente eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+              example:
+                success: true
+                data:
+                  id: 1
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Cliente no encontrado"
+              example:
+                success: false
+                error: "Cliente no encontrado"
+
+  /internal/customers/{id}:
+    servers:
+      - url: http://localhost:3001
+        description: Customers API
+    get:
+      summary: Obtiene detalles de un cliente (Uso interno)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalles del cliente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  name:
+                    type: string
+                    example: "ACME Corp"
+                  email:
+                    type: string
+                    example: "compras@acme.com"
+                  phone:
+                    type: string
+                    example: "+593-2-2345678"
+              example:
+                id: 1
+                name: "ACME Corp"
+                email: "compras@acme.com"
+                phone: "+593-2-2345678"
+        '403':
+          description: Forbidden - Invalid Service Token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Forbidden - Invalid Service Token"
+              example:
+                success: false
+                error: "Forbidden - Invalid Service Token"
+
+  # --------------------
+  # Orders API
+  # --------------------
+  /orders:
+    servers:
+      - url: http://localhost:3002
+        description: Orders API
+    get:
+      summary: Listado de pedidos
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Listado de pedidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    customer_id:
+                      type: integer
+                      example: 1
+                    status:
+                      type: string
+                      example: "pending"
+                    created_at:
+                      type: string
+                      format: date-time
+                      example: "2023-01-01T00:00:00.000Z"
+              example:
+                id: 1
+                customer_id: 1
+                status: "pending"
+                created_at: "2023-01-01T00:00:00.000Z"
+    post:
+      summary: Crear un pedido
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - customer_id
+                - items
+              properties:
+                customer_id:
+                  type: integer
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      product_id:
+                        type: integer
+                      quantity:
+                        type: integer
+              example:
+                customer_id: 1
+                items:
+                  - product_id: 1
+                    quantity: 1
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  customer_id:
+                    type: integer
+                    example: 1
+                  status:
+                    type: string
+                    example: "pending"
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2023-01-01T00:00:00.000Z"
+              example:
+                id: 1
+                customer_id: 1
+                status: "pending"
+                created_at: "2023-01-01T00:00:00.000Z"
+        '400':
+          description: Stock insuficiente para producto 
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Stock insuficiente para producto con id: 1"
+              example:
+                error: "Stock insuficiente para producto con id: 1"
+          '400':
+            description: Producto con id no existe 
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    error:
+                      type: string
+                      example: "Producto con id: 1 no existe"
+                example:
+                  error: "Producto con id: 1 no existe"
+
+  /orders/{id}:
+    servers:
+      - url: http://localhost:3002
+        description: Orders API
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener detalles de un pedido
+      responses:
+        '200':
+          description: Detalles del pedido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  customer_id:
+                    type: integer
+                    example: 1
+                  status:
+                    type: string
+                    example: "pending"
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2023-01-01T00:00:00.000Z"
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        product_id:
+                          type: integer
+                          example: 1
+                        qty:
+                          type: integer
+                          example: 1
+                        unit_price_cents:
+                          type: integer
+                          example: 1000
+                        subtotal_cents:
+                          type: integer
+                          example: 1000
+              example:
+                id: 1
+                customer_id: 1
+                status: "pending"
+                created_at: "2023-01-01T00:00:00.000Z"
+                items:
+                  - product_id: 1
+                    qty: 1
+                    unit_price_cents: 1000
+                    subtotal_cents: 1000
+                  - product_id: 2
+                    qty: 2
+                    unit_price_cents: 2000
+                    subtotal_cents: 4000
+        '404':
+          description: Pedido no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Orden no encontrada"
+              example:
+                error: "Orden no encontrada"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+              example:
+                error: "Error interno del servidor"
+
+  /orders/{id}/confirm:
+    servers:
+      - url: http://localhost:3002
+        description: Orders API
+    post:
+      summary: Confirmar un pedido
+      parameters:
+        - in: header
+          name: X-Idempotency-Key
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pedido confirmado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  customer_id:
+                    type: integer
+                    example: 1
+                  status:
+                    type: string
+                    example: "confirmed"
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2023-01-01T00:00:00.000Z"
+              example:
+                id: 1
+                customer_id: 1
+                status: "confirmed"
+                created_at: "2023-01-01T00:00:00.000Z"
+        '422':
+          description: Clave faltante
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "X-Idempotency-Key requerido"
+              example:
+                error: "X-Idempotency-Key requerido"
+        '404':
+          description: Pedido no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Orden no encontrada"
+              example:
+                error: "Orden no encontrada"
+        '409':
+          description: orden ya confirmada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Orden ya se encuenta en estado SUCCESS"
+              example:
+                error: "Orden ya se encuenta en estado SUCCESS"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+              example:
+                error: "Error interno del servidor"
+
+  # --------------------
+  # Products (Orders API)
+  # --------------------
+  /products:
+    servers:
+      - url: http://localhost:3002
+        description: Orders API
+    get:
+      summary: Obtener productos
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de productos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    name:
+                      type: string
+                      example: "Producto 1"
+                    sku:
+                      type: string
+                      example: "SKU-123"
+                    price_cents:
+                      type: integer
+                      example: 1000
+                    stock:
+                      type: integer
+                      example: 10
+              example:
+                - id: 1
+                  name: "Producto 1"
+                  sku: "SKU-123"
+                  price_cents: 1000
+                  stock: 10
+
+    post:
+      summary: Crear un producto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - sku
+                - price_cents
+                - stock
+              properties:
+                name:
+                  type: string
+                sku:
+                  type: string
+                price_cents:
+                  type: integer
+                stock:
+                  type: integer
+      responses:
+        '201':
+          description: Producto creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  name:
+                    type: string
+                    example: "Producto 1"
+                  sku:
+                    type: string
+                    example: "SKU-123"
+                  price_cents:
+                    type: integer
+                    example: 1000
+                  stock:
+                    type: integer
+                    example: 10
+              example:
+                id: 1
+                name: "Producto 1"
+                sku: "SKU-123"
+                price_cents: 1000
+                stock: 10
+
+  /products/{id}:
+    servers:
+      - url: http://localhost:3002
+        description: Orders API
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Obtener detalles del producto
+      responses:
+        '200':
+          description: Detalles del producto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  name:
+                    type: string
+                    example: "Producto 1"
+                  sku:
+                    type: string
+                    example: "SKU-123"
+                  price_cents:
+                    type: integer
+                    example: 1000
+                  stock:
+                    type: integer
+                    example: 10
+              example:
+                id: 1
+                name: "Producto 1"
+                sku: "SKU-123"
+                price_cents: 1000
+                stock: 10
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Producto no encontrado"
+              example:
+                error: "Producto no encontrado"
+    patch:
+      summary: Actualizar un producto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                price_cents:
+                  type: integer
+                stock:
+                  type: integer
+      responses:
+        '200':
+          description: Producto actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  name:
+                    type: string
+                    example: "Producto 1"
+                  sku:
+                    type: string
+                    example: "SKU-123"
+                  price_cents:
+                    type: integer
+                    example: 1000
+                  stock:
+                    type: integer
+                    example: 10
+              example:
+                id: 1
+                name: "Producto 1"
+                sku: "SKU-123"
+                price_cents: 1000
+                stock: 10
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Producto no encontrado"
+              example:
+                error: "Producto no encontrado"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+              example:
+                error: "Error interno del servidor"
+
+  # --------------------
+  # Orchestrator
+  # --------------------
+  /orchestrator/create-and-confirm-order:
+    servers:
+      - url: http://localhost:3003
+        description: Lambda Orchestrator
+    post:
+      summary: Create and confirm an order (Saga pattern)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - customer_id
+                - items
+                - idempotency_key
+                - correlation_id
+              properties:
+                customer_id:
+                  type: integer
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      product_id:
+                        type: integer
+                      qty:
+                        type: integer
+                      unit_price_cents:
+                        type: integer
+                      subtotal_cents:
+                        type: integer
+                idempotency_key:
+                  type: string
+                  example: "idempotency_key"
+                correlation_id:
+                  type: string
+                  example: "correlation_id"
+      responses:
+        '201':
+          description: orden creada y confirmada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  customer_id:
+                    type: integer
+                    example: 1
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        product_id:
+                          type: integer
+                          example: 1
+                        qty:
+                          type: integer
+                          example: 1
+                        unit_price_cents:
+                          type: integer
+                          example: 1000
+                        subtotal_cents:
+                          type: integer
+                          example: 1000
+                  idempotency_key:
+                    type: string
+                    example: "idempotency_key"
+                  correlation_id:
+                    type: string
+                    example: "correlation_id"
+              example:
+                id: 1
+                customer_id: 1
+                items:
+                  - product_id: 1
+                    qty: 1
+                    unit_price_cents: 1000
+                    subtotal_cents: 1000
+                idempotency_key: "idempotency_key"
+                correlation_id: "correlation_id"
+        '400':
+          description: customer_id e items faltantes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "customer_id e items son requeridos"
+                example:
+                  error: "customer_id e items son requeridos"
+        '409':
+          description: La clave de idempotencia es obligatoria
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "idempotency_key es requerido"
+                example:
+                  error: "idempotency_key es requerido"
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Cliente no encontrado"
+                example:
+                  error: "Cliente no encontrado"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                example:
+                  error: "Error interno del servidor"
