@@ -13,8 +13,6 @@ provider:
     ORDERS_API_BASE: ${env:ORDERS_API_BASE}
     SERVICE_TOKEN: ${env:SERVICE_TOKEN}
   httpApi:
-    disableDefaultEndpoint: false
-    payload: '2.0'
     cors: true
 
 functions:
