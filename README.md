@@ -341,7 +341,7 @@ free -h
 ```
 
 **Lambda no puede conectarse a APIs:**
-- Verificar Security Groups del EC2 (puertos 3001, 3002 abiertos)
+- Verificar Security Groups del EC2 (puertos 3001 y 3002 con origin 0.0.0.0/0)
 - Verificar que las URLs en `.env` del Lambda usen IP pública
 - Confirmar que `SERVICE_TOKEN` coincida en todos los servicios
 
@@ -360,5 +360,6 @@ export $(cat .env | xargs)
 #volver a deployar con npm run deploy
 
 ```
+
 
 
