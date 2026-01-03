@@ -37,7 +37,7 @@ Editar `.env` y reemplazar `SERVICE_TOKEN` con el token generado.
 ### 2. Levantar servicios
 
 ```bash
-docker-compose up -d --build
+docker-compose up -d --build  mysql customers-api orders-api adminer
 ```
 
 ### 3. Verificar health checks
@@ -45,7 +45,6 @@ docker-compose up -d --build
 ```bash
 curl http://localhost:3001/health  # Customers API
 curl http://localhost:3002/health  # Orders API
-curl http://localhost:3000/health  # Lambda Orchestrator
 ```
 
 ## Configuración EC2
@@ -80,7 +79,7 @@ cd Backoffice-pedidos-B2B
 
 # Configurar .env con IP pública del EC2
 cp .env.example .env
-nano .env  # Editar SERVICE_TOKEN y passwords
+nano .env  # Editar SERVICE_TOKEN y passwords,recomendable usar las passwords de las APIs para la base de datos
 ```
 
 Levantar con Docker:
@@ -125,7 +124,8 @@ aws configure
 Deploy a AWS:
 
 ```bash
-npx serverless deploy
+cd lambda-orchestrator
+npm run deploy
 ```
 
 Guardar la URL del endpoint que aparece al final del deploy.
@@ -185,7 +185,7 @@ cp .env.example .env
 npm install
 
 # Iniciar serverless-offline
-npx serverless offline
+docker-compose up -d --build lambda-orchestrator
 ```
 
 Testear:
