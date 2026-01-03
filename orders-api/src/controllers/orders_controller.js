@@ -132,7 +132,7 @@ export const confirmOrder = async (req, res) => {
 
     const idempotencyKey = headers['x-idempotency-key'];
 
-    const orderId = req.params.id;
+    const orderId = params.id;
 
 
     const [rows] = await db.query(

@@ -87,7 +87,7 @@ nano .env  # Editar SERVICE_TOKEN y passwords,recomendable usar las passwords de
 Levantar con Docker:
 
 ```bash
-docker-compose up -d --build
+docker-compose up -d --build mysql customers-api orders-api adminer
 ```
 
 ### 3. Configurar Lambda para deployment
@@ -139,7 +139,6 @@ Guardar la URL del endpoint que aparece al final del deploy.
 ```bash
 curl -X POST http://localhost:3001/customers \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer secret-service-token-change-in-production" \
   -d '{
     "name": "Juan Pérez",
     "email": "juan@example.com",
@@ -147,32 +146,39 @@ curl -X POST http://localhost:3001/customers \
   }'
 ```
 
-### Crear orden (orquestador local)
+### Crear producto
 
 ```bash
-curl -X POST http://localhost:3000/orchestrator/create-and-confirm-order \
+curl -X POST http://localhost:3002/products \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Teclado",
+    "price_cents": 80,
+    "stock": 10,
+    "sku": "SKU-123456"
+  }'
+```
+
+### Crear orden
+
+```bash
+curl -X POST http://localhost:3002/orders \
   -H "Content-Type: application/json" \
   -d '{
     "customerId": 1,
     "items": [
-      {"productName": "Laptop", "quantity": 1, "price": 1200}
+      {"product_id": "1", "qty": 1}
     ]
   }'
 ```
 
-## Testing AWS Lambda
+### Confirmar orden
 
-Usando la URL del deploy:
-
-```bash
-curl -X POST https://abc123.execute-api.us-east-2.amazonaws.com/orchestrator/create-and-confirm-order \
+```bash 
+curl -X POST http://localhost:3002/orders/1/confirm \
   -H "Content-Type: application/json" \
-  -d '{
-    "customerId": 1,
-    "items": [
-      {"productName": "Mouse", "quantity": 2, "price": 25}
-    ]
-  }'
+  -H "x-idempotency-key: abc-123" \
+  -H "Authorization: Bearer secret-service-token-change-in-production"
 ```
 
 ## Invocar Lambda Localmente
@@ -202,6 +208,24 @@ curl -X POST http://localhost:3000/orchestrator/create-and-confirm-order \
     ]
   }'
 ```
+
+
+## Testing AWS Lambda
+
+Usando la URL del deploy:
+
+```bash
+curl -X POST https://abc123.execute-api.us-east-2.amazonaws.com/orchestrator/create-and-confirm-order \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": 1,
+    "items": [
+      {"productName": "Mouse", "quantity": 2, "price": 25}
+    ]
+  }'
+```
+
+
 
 ## URLs y Puertos
 

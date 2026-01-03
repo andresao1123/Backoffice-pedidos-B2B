@@ -76,7 +76,7 @@ paths:
       - url: http://18.216.119.215:3001
         description: Customers API
     get:
-      summary: Obtiene la lista de clientes
+      summary: Obtiene la lista de clientes activos
       parameters:
         - in: query
           name: search
@@ -165,7 +165,7 @@ paths:
         schema:
           type: integer
     get:
-      summary: Obtener cliente
+      summary: Obtener cliente activo
       responses:
         '200':
           description: Cliente encontrado
