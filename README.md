@@ -75,8 +75,8 @@ node --version  # Verificar v22.x
 Clonar repo y configurar:
 
 ```bash
-git clone <tu-repo>
-cd orders-system
+git clone https://github.com/andresao1123/Backoffice-pedidos-B2B.git
+cd Backoffice-pedidos-B2B
 
 # Configurar .env con IP pública del EC2
 cp .env.example .env
