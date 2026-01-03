@@ -1,5 +1,7 @@
 service: orders-orchestrator
 
+configValidationMode: off
+
 provider:
   name: aws
   runtime: nodejs22.x
