@@ -42,7 +42,46 @@ Editar `.env` y reemplazar `SERVICE_TOKEN` con el token generado.
 docker-compose up -d --build  mysql customers-api orders-api adminer
 ```
 
-### 3. health checks
+### 3. Configurar Lambda localmente
+
+En tu máquina local (dentro de `lambda-orchestrator/`):
+
+```bash
+cd lambda-orchestrator
+cp .env.example .env
+```
+
+Editar .env con datos reales
+```bash
+nano .env
+```
+Ejemplo `.env`:
+```bash
+CUSTOMERS_API_BASE=http://customers-api:3001
+ORDERS_API_BASE=http://orders-api:3002
+SERVICE_TOKEN=8f3e9a2b7c6d5e4f3a2b1c9d8e7f6a5b4c3d2e1f9a8b7c6d5e4f3a2b1c0d9e8f
+```
+
+Instalar Serverless Framework:
+
+```bash
+npm install serverless@3.40.0
+```
+
+Instalar dependencias:
+
+```bash
+npm install
+```
+
+Iniciar serverless-offline:
+
+```bash
+docker-compose up -d --build lambda-orchestrator
+```
+
+
+### 4. health checks
 
 ```bash
 curl http://localhost:3001/health  # Customers API
@@ -90,9 +129,10 @@ Levantar con Docker:
 docker-compose up -d --build mysql customers-api orders-api adminer
 ```
 
-### 3. Configurar Lambda para deployment
 
-En tu máquina local (dentro de `lambda-orchestrator/`):
+### 3. Configurar Lambda para deployment en AWS
+
+En tu instacia EC2 mediante ssh (dentro de `lambda-orchestrator/`):
 
 ```bash
 cd lambda-orchestrator
@@ -110,10 +150,17 @@ SERVICE_TOKEN=8f3e9a2b7c6d5e4f3a2b1c9d8e7f6a5b4c3d2e1f9a8b7c6d5e4f3a2b1c0d9e8f
 AWS_REGION=us-east-2
 ```
 
+
 Instalar Serverless Framework:
 
 ```bash
 npm install serverless@3.40.0
+```
+
+Instalar dependencias:
+
+```bash
+npm install
 ```
 
 Configurar AWS credentials:
@@ -181,22 +228,7 @@ curl -X POST http://localhost:3002/orders/1/confirm \
   -H "Authorization: Bearer secret-service-token-change-in-production"
 ```
 
-## Invocar Lambda Localmente
-
-Dentro de `lambda-orchestrator/`:
-
-```bash
-# Configurar .env.example con URLs locales
-cp .env.example .env
-
-# Instalar dependencias
-npm install
-
-# Iniciar serverless-offline
-docker-compose up -d --build lambda-orchestrator
-```
-
-Testear:
+## crea y confirmar orden
 
 ```bash
 curl -X POST http://localhost:3000/orchestrator/create-and-confirm-order \
