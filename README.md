@@ -242,3 +242,11 @@ free -h
 openssl rand -hex 32
 # Actualizar en TODOS los .env (raíz, APIs, Lambda)
 ```
+
+**Si el deploy no agarra las variables de entorno del archivo .env**
+
+```bash
+#dentro de la carpeta lambda-orchestrator
+export $(cat .env | xargs)
+#volver a deployar con npm run deploy
+```
