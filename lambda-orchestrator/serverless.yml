@@ -7,25 +7,27 @@ provider:
   runtime: nodejs22.x
   architecture: arm64
   region: us-east-2
-  stage: '$default'
+  stage: prod
   environment:
     CUSTOMERS_API_BASE: ${env:CUSTOMERS_API_BASE}
     ORDERS_API_BASE: ${env:ORDERS_API_BASE}
     SERVICE_TOKEN: ${env:SERVICE_TOKEN}
+  httpApi:
+    disableDefaultEndpoint: false
+    payload: '2.0'
+    cors: true
 
 functions:
   createAndConfirmOrder:
     handler: src/handler.createAndConfirmOrder
     events:
-      - httpApi:
-          path: orchestrator/create-and-confirm-order
+          path: /orchestrator/create-and-confirm-order
           method: post
-          cors: true
   health:
     handler: src/handler.health
     events:
       - httpApi:
-          path: health
+          path: /health
           method: get
 
 plugins:
