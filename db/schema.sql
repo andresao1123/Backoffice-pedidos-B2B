@@ -2,15 +2,6 @@ CREATE DATABASE IF NOT EXISTS orders_db;
 
 use orders_db;
 
-CREATE TABLE IF NOT EXISTS users (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-  `name` VARCHAR(100) NOT NULL,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  `role` ENUM('admin', 'operator') DEFAULT 'operator',
-  created_at DATETIME default NOW()
-);
-
 CREATE TABLE IF NOT EXISTS customers(
 	id int not null primary key auto_increment,
     `name` varchar(100) not null,
