@@ -4,20 +4,20 @@ services:
     container_name: orders-system-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: orders_db
-      MYSQL_USER: orders_user
-      MYSQL_PASSWORD: orders_pass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - ./db/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
       - ./db/seed.sql:/docker-entrypoint-initdb.d/2-seed.sql
-      - /var/lib/mysql
+      - mysql_data:/var/lib/mysql
     networks:
       - orders-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,26 +30,28 @@ services:
     container_name: orders-system-customers-api
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "${CUSTOMERS_API_PORT:-3001}:3001"
     environment:
-      NODE_ENV: development
+      NODE_ENV: ${CUSTOMERS_API_NODE_ENV:-development}
       PORT: 3001
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: root
-      DB_PASSWORD: root
-      DB_NAME: orders_db 
-      SERVICE_TOKEN: 151cbcf56116e0236bd247ab1f8702cab277b6569116a2bbd4561a7798ab3fec
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
+      LOG_LEVEL: info
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
       - orders-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "node", "-e", "const http = require('http'); const req = http.get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1));"]
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 40s
+      start_period: 15s
     volumes:
       - ./customers-api/src:/app/src:ro
 
@@ -60,28 +62,31 @@ services:
     container_name: orders-system-orders-api
     restart: unless-stopped
     ports:
-      - "3002:3002"
+      - "${ORDERS_API_PORT:-3002}:3002"
     environment:
-      NODE_ENV: development
+      NODE_ENV: ${ORDERS_API_NODE_ENV:-development}
       PORT: 3002
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: root
-      DB_PASSWORD: root
-      DB_NAME: orders_db
-      SERVICE_TOKEN: 151cbcf56116e0236bd247ab1f8702cab277b6569116a2bbd4561a7798ab3fec
-      CUSTOMERS_API_BASE: http://customers-api:3001
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
+      CUSTOMERS_API_BASE: ${CUSTOMERS_API_BASE:-http://customers-api:3001}
+      LOG_LEVEL: info
     depends_on:
-      - mysql
-      - customers-api
+      mysql:
+        condition: service_healthy
+      customers-api:
+        condition: service_healthy
     networks:
       - orders-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3002/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "node", "-e", "const http = require('http'); const req = http.get('http://localhost:3002/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1));"]
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 40s
+      start_period: 20s
     command: sh -c "npm run migrate && npm run seed && npm start"
     volumes:
       - ./orders-api/src:/app/src:ro
@@ -94,22 +99,24 @@ services:
     container_name: orders-system-orchestrator
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${LAMBDA_PORT:-3000}:3000"
     environment:
-      CUSTOMERS_API_BASE: http://customers-api:3001
-      ORDERS_API_BASE: http://orders-api:3002
-      SERVICE_TOKEN: 151cbcf56116e0236bd247ab1f8702cab277b6569116a2bbd4561a7798ab3fec
+      CUSTOMERS_API_BASE: ${CUSTOMERS_API_BASE:-http://customers-api:3001}
+      ORDERS_API_BASE: ${ORDERS_API_BASE:-http://orders-api:3002}
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
     depends_on:
-      - customers-api
-      - orders-api
+      customers-api:
+        condition: service_healthy
+      orders-api:
+        condition: service_healthy
     networks:
       - orders-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "node", "-e", "const http = require('http'); const req = http.get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1));"]
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 40s
+      start_period: 20s
     volumes:
       - ./lambda-orchestrator/src:/app/src:ro
 
@@ -118,20 +125,18 @@ services:
     container_name: orders-system-adminer
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${ADMINER_PORT:-8080}:8080"
     environment:
-      ADMINER_DEFAULT_SERVER: mysql
+      ADMINER_DEFAULT_SERVER: ${ADMINER_DEFAULT_SERVER:-mysql}
     depends_on:
       - mysql
     networks:
       - orders-network
 
-
 networks:
   orders-network:
     driver: bridge
     name: orders-system-network
-
 
 volumes:
   mysql_data:
