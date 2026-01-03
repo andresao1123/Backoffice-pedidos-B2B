@@ -40,7 +40,7 @@ Editar `.env` y reemplazar `SERVICE_TOKEN` con el token generado.
 docker-compose up -d --build  mysql customers-api orders-api adminer
 ```
 
-### 3. Verificar health checks
+### 3. health checks
 
 ```bash
 curl http://localhost:3001/health  # Customers API
@@ -49,7 +49,7 @@ curl http://localhost:3002/health  # Orders API
 
 ## Configuración EC2
 
-### 1. Preparar EC2 (prevenir OOM en npm install)
+### 1. Preparar EC2 (prevenir OOM en npm install, si se usa t3.micro)
 
 Crear swap de 2GB:
 
