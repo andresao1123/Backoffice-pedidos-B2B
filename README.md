@@ -5,18 +5,20 @@ Sistema de orquestación de pedidos con microservicios (Customer API, Orders API
 ## Arquitectura
 
 ```
-┌─────────────────┐
-│ Lambda          │ ──┐
-│ Orchestrator    │   │
-└─────────────────┘   │
-                      ├──► ┌──────────────┐
-┌─────────────────┐   │    │   MySQL      │
-│ Customers API   │ ──┤    │   Database   │
-└─────────────────┘   │    └──────────────┘
-                      │
-┌─────────────────┐   │
-│ Orders API      │ ──┘
-└─────────────────┘
+
+
+                                ┌─────────────────┐       
+                      ┌────────>│ Customers API   │  ──┐    
+                      |         └─────────────────┘    │   
+┌─────────────────┐   |                                |
+│ Lambda          │──>|                                |         ┌─────────────────┐
+│ Orchestrator    │   |                                |────────>| MySQL database  |
+└─────────────────┘   │                                |         └─────────────────┘
+                      │                                |         
+                      |                                |
+                      |         ┌─────────────────┐    |                  
+                      └────────>│ Orders API      │ ───┘
+                                └─────────────────┘
 ```
 
 ## Setup Local (Docker)
@@ -252,4 +254,5 @@ openssl rand -hex 32
 #dentro de la carpeta lambda-orchestrator
 export $(cat .env | xargs)
 #volver a deployar con npm run deploy
+
 ```
