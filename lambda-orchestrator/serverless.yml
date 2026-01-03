@@ -19,6 +19,7 @@ functions:
   createAndConfirmOrder:
     handler: src/handler.createAndConfirmOrder
     events:
+      - httpApi:
           path: /orchestrator/create-and-confirm-order
           method: post
   health:
