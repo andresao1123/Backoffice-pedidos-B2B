@@ -12,6 +12,7 @@ export const getProductsQuerySchema = z.object({
 
 export const productIdParamSchema = z.object({
     id: z.coerce.number({
+        required_error: 'ID es requerido',
         invalid_type_error: 'ID inválido',
     }).int().positive(),
 });

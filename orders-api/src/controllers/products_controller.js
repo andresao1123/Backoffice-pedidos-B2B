@@ -7,7 +7,7 @@ export const getProducts = async (req, res) => {
     const query = validate(getProductsQuerySchema, req.query, res);
     if (!query) return;
 
-    const { search, cursor, limit = 20 } = req.query;
+    const { search, cursor, limit = 20 } = query;
 
     const params = [];
     let where = 'WHERE 1=1';
@@ -23,9 +23,6 @@ export const getProducts = async (req, res) => {
     }
 
     const limitNumber = Number(limit);
-    if (isNaN(limitNumber) || limitNumber <= 0) {
-        return res.status(400).json({ error: 'limit debe ser un número positivo' });
-    }
 
 
     const [products] = await db.query(
@@ -52,14 +49,7 @@ export const getProduct = async (req, res) => {
     const params = validate(productIdParamSchema, req.params, res);
     if (!params) return;
 
-    const productId = req.params.id;
-
-    if (!productId) {
-        return res.status(400).json({
-            success: false,
-            error: 'Product ID is required'
-        });
-    }
+    const productId = params.id;
 
     const [product] = await db.query(
         'SELECT * FROM products WHERE id = ?',
@@ -84,43 +74,18 @@ export const createProduct = async (req, res) => {
     const body = validate(createProductSchema, req.body, res);
     if (!body) return;
 
-    const { name, sku, price_cents, stock } = req.body;
-    if (!name || !sku || price_cents == null || stock == null) {
-        return res.status(400).json({
-            success: false,
-            error: 'name, sku, price_cents y stock son requeridos'
-        });
-    }
-
-    if (typeof price_cents !== 'number' || price_cents <= 0) {
-        return res.status(400).json({
-            success: false,
-            error: 'price_cents debe ser un número mayor a 0'
-        });
-    }
-
-    if (!Number.isInteger(stock) || stock < 0) {
-        return res.status(400).json({
-            success: false,
-            error: 'stock debe ser un entero >= 0'
-        });
-    }
-
     try {
         const [result] = await db.query(
             `INSERT INTO products (name, sku, price_cents, stock)
        VALUES (?, ?, ?, ?)`,
-            [name, sku, price_cents, stock]
+            [body.name, body.sku, body.price_cents, body.stock]
         );
 
         return res.status(201).json({
             success: true,
             data: {
                 id: result.insertId,
-                name,
-                sku,
-                price_cents,
-                stock
+                ...body
             }
         });
 
@@ -149,18 +114,8 @@ export const updateProduct = async (req, res) => {
     if (!body) return;
 
 
-    const productId = Number(req.params.id);
-    const { price_cents, stock } = req.body;
-
-    if (!Number.isInteger(productId)) {
-        return res.status(400).json({ error: 'ID inválido' });
-    }
-
-    if (price_cents == null && stock == null) {
-        return res.status(400).json({
-            error: 'Debe enviar price_cents y/o stock'
-        });
-    }
+    const productId = Number(params.id);
+    const { price_cents, stock } = body;
 
     const fields = [];
     const values = [];

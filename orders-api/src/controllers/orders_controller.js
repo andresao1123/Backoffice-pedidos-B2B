@@ -121,17 +121,17 @@ export const createOrder = async (req, res) => {
 
 export const confirmOrder = async (req, res) => {
 
-    const headers = validate(idempotencyHeaderSchema, req.headers, res);
-    if (!headers) return;
+    const result = idempotencyHeaderSchema.safeParse(req.headers);
+    if (!result.success) {
+        return res.status(422).json({ error: 'X-Idempotency-Key requerido' });
+    }
+
+    const headers = result.data;
 
     const params = validate(orderIdParamSchema, req.params, res);
     if (!params) return;
 
-    const idempotencyKey = req.headers['x-idempotency-key'];
-
-    if (!idempotencyKey) {
-        return res.status(422).json({ error: 'X-Idempotency-Key requerido' });
-    }
+    const idempotencyKey = headers['x-idempotency-key'];
 
     const orderId = req.params.id;
 
@@ -248,7 +248,7 @@ export const cancelOrder = async (req, res) => {
     const params = validate(orderIdParamSchema, req.params, res);
     if (!params) return;
 
-    const orderId = req.params.id;
+    const orderId = params.id;
 
     if (!orderId) {
         return res.status(400).json({ error: 'ID de orden requerido' });
@@ -295,7 +295,7 @@ export const getOrder = async (req, res) => {
         const params = validate(orderIdParamSchema, req.params, res);
         if (!params) return;
 
-        const orderId = req.params.id;
+        const orderId = params.id;
 
         if (!orderId) {
             return res.status(400).json({ error: 'ID de orden requerido' });
@@ -333,7 +333,7 @@ export const listOrders = async (req, res) => {
     const query = validate(listOrdersQuerySchema, req.query, res);
     if (!query) return;
 
-    const { status, from, to, cursor, limit = 20 } = req.query;
+    const { status, from, to, cursor, limit = 20 } = query;
 
     const params = [];
     let where = 'WHERE 1=1';
