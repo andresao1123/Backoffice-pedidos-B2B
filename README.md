@@ -241,6 +241,54 @@ curl -X POST http://localhost:3000/orchestrator/create-and-confirm-order \
   }'
 ```
 
+## Testing EC2
+
+### Crear cliente
+
+```bash
+curl -X POST http://18.216.119.215:3001/customers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Juan Pérez",
+    "email": "juan@example.com",
+    "phone": "+593999999999"
+  }'
+```
+
+### Crear producto
+
+```bash
+curl -X POST http://18.216.119.215:3002/products \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Teclado",
+    "price_cents": 80,
+    "stock": 10,
+    "sku": "SKU-123456"
+  }'
+```
+
+### Crear orden
+
+```bash
+curl -X POST http://18.216.119.215:3002/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": 1,
+    "items": [
+      {"product_id": "1", "qty": 1}
+    ]
+  }'
+```
+
+### Confirmar orden
+
+```bash 
+curl -X POST http://18.216.119.215:3002/orders/1/confirm \
+  -H "Content-Type: application/json" \
+  -H "x-idempotency-key: abc-123" \
+  -H "Authorization: Bearer secret-service-token-change-in-production"
+```
 
 ## Testing AWS Lambda
 
@@ -312,4 +360,5 @@ export $(cat .env | xargs)
 #volver a deployar con npm run deploy
 
 ```
+
 
