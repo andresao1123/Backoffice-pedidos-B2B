@@ -38,7 +38,7 @@ export const getProducts = async (req, res) => {
     const nextCursor =
         products.length > 0 ? products[products.length - 1].id : null;
 
-    res.json({
+    res.status(200).json({
         data: products,
         next_cursor: nextCursor,
     });
