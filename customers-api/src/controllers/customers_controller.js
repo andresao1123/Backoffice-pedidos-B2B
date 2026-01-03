@@ -23,8 +23,8 @@ export const getCustomers = async (req, res) => {
 
     const [rows] = await db.query(
         `
-    SELECT * FROM customers
-    ${where}
+    SELECT id,name,email,phone FROM customers
+    ${where} and deleted_at IS NULL
     ORDER BY id ASC
     LIMIT ?
     `,
@@ -68,7 +68,7 @@ export const getCustomer = async (req, res) => {
     if (!params) return;
 
     const [rows] = await db.query(
-        'SELECT * FROM customers WHERE id = ? AND deleted_at IS NULL',
+        'SELECT id,name,email,phone FROM customers WHERE id = ? AND deleted_at IS NULL',
         [params.id]
     );
 
@@ -94,7 +94,7 @@ export const updateCustomer = async (req, res) => {
         `
     UPDATE customers
     SET ${fields.join(', ')}
-    WHERE id = ?
+    WHERE id = ? and deleted_at IS NULL
     `,
         [...values, params.id]
     );
