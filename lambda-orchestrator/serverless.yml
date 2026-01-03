@@ -37,3 +37,5 @@ custom:
   serverless-offline:
     httpPort: ${env:PORT, 3000}
     noPrependStageInUrl: true
+    dotenv:
+    path: .env
