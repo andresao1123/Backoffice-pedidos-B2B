@@ -1,12 +1,12 @@
 import express from 'express';
 import user_router from './routes/customers_routes.js';
+import cors from 'cors';
 
 const app = express();
 
-// Middleware
 app.use(express.json());
+app.use(cors());
 
-// Routes
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to the Customers API' });
 });

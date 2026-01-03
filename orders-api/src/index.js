@@ -1,14 +1,14 @@
 import express from 'express';
 import products_router from './routes/products_routes.js';
 import orders_router from './routes/orders_routes.js';
+import cors from 'cors';
 
 
 const app = express();
 
-// Middleware
 app.use(express.json());
+app.use(cors());
 
-// Routes
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to the Orders API' });
 });
