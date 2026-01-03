@@ -223,7 +223,7 @@ curl -X POST http://localhost:3000/orchestrator/create-and-confirm-order \
 - `AWS_REGION`: Región de AWS para deployment
 
 ## Probar las APIs
-Si bien swagger web permite probar las peticiones, esta puede bloquear las peticiones por CORS/HTTP, si se desea probar las endpoints de las APIs usar Postman usando la IP de la instancia EC2 + puerto de la API.
+Aunque Swagger Web permite probar las peticiones, estas pueden bloquearse debido a CORS o a que la instancia EC2 no cuenta con HTTPS. Para probar los endpoints de las APIs de forma confiable, se recomienda usar Postman, utilizando la IP de la instancia EC2 junto con el puerto de la API.
 
 ## Troubleshooting
 
