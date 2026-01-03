@@ -222,6 +222,9 @@ curl -X POST http://localhost:3000/orchestrator/create-and-confirm-order \
 - `SERVICE_TOKEN`: Mismo token que las APIs
 - `AWS_REGION`: Región de AWS para deployment
 
+**Probar las APIs**
+Si bien swagger web permite probar las peticiones, esta puede bloquear las peticiones por CORS/HTTP, si se desea probar las endpoints de las APIs usar Postman usando la IP de la instancia EC2 + puerto de la API.
+
 ## Troubleshooting
 
 **Error en npm install en EC2:**
