@@ -1,24 +1,18 @@
 import { db } from '../db.js';
 
+import {
+    createOrderSchema,
+    orderIdParamSchema,
+    idempotencyHeaderSchema,
+    listOrdersQuerySchema
+} from '../validators/order_schema.js';
+import { validate } from '../utils/validate.js';
+
 export const createOrder = async (req, res) => {
-    const { customer_id, items } = req.body
-    if (typeof customer_id !== 'number') {
-        return res.status(400).json({ error: 'customer_id debe ser un número' })
-    }
-    if (!Array.isArray(items)) {
-        return res.status(400).json({ error: 'items debe ser un array' })
-    }
-    if (items.length === 0) {
-        return res.status(400).json({ error: 'items debe tener al menos un elemento' })
-    }
+    const body = validate(createOrderSchema, req.body, res);
+    if (!body) return;
 
-    var validItems = items.every(item => {
-        return item.qty > 0 && item.product_id > 0
-    })
-
-    if (!validItems) {
-        return res.status(400).json({ error: 'todos los items deben tener product_id y quantity mayores a 0' })
-    }
+    const { customer_id, items } = body;
 
     let customerResponse;
     try {
@@ -26,14 +20,17 @@ export const createOrder = async (req, res) => {
             `${process.env.CUSTOMERS_API_BASE}/internal/customers/${customer_id}`,
             {
                 headers: {
-                    'Authorization': `Bearer ${process.env.SERVICE_TOKEN}`
-                }
+                    Authorization: `Bearer ${process.env.SERVICE_TOKEN}`,
+                },
             }
         );
-    } catch (err) {
-        console.error('Error llamando Customers API:', err.message);
-        return res.status(502).json({
-            error: 'Customers service unavailable'
+    } catch {
+        return res.status(502).json({ error: 'Customers service unavailable' });
+    }
+
+    if (!customerResponse.ok) {
+        return res.status(404).json({
+            error: 'Customer no existe'
         });
     }
 
@@ -45,26 +42,24 @@ export const createOrder = async (req, res) => {
                 'SELECT id, price_cents, stock FROM products WHERE id = ? FOR UPDATE',
                 [item.product_id]
             );
+
             const product = rows[0];
-
-            if (!product) {
-                throw new Error(`Producto ${item.product_id} no existe`);
-            }
-
-            if (product.stock < item.qty) {
-                throw new Error(`Stock insuficiente para producto ${item.product_id}`);
-            }
+            if (!product) throw { status: 404, message: `Producto ${item.product_id} no existe` };
+            if (product.stock < item.qty)
+                throw {
+                    status: 400,
+                    message: `Stock insuficiente para producto ${item.product_id}`
+                };
         }
 
         let total_cents = 0;
         const orderItemsData = [];
 
         for (const item of items) {
-            const [rows] = await db.query(
+            const [[product]] = await db.query(
                 'SELECT price_cents FROM products WHERE id = ?',
                 [item.product_id]
             );
-            const product = rows[0];
 
             const subtotal = product.price_cents * item.qty;
             total_cents += subtotal;
@@ -73,7 +68,7 @@ export const createOrder = async (req, res) => {
                 product_id: item.product_id,
                 qty: item.qty,
                 unit_price_cents: product.price_cents,
-                subtotal_cents: subtotal
+                subtotal_cents: subtotal,
             });
         }
 
@@ -84,13 +79,18 @@ export const createOrder = async (req, res) => {
 
         const orderId = orderResult.insertId;
 
-        for (const itemData of orderItemsData) {
+        for (const item of orderItemsData) {
             await db.query(
-                `INSERT INTO order_items 
-                (order_id, product_id, qty, unit_price_cents, subtotal_cents) 
-                VALUES (?, ?, ?, ?, ?)`,
-                [orderId, itemData.product_id, itemData.qty,
-                    itemData.unit_price_cents, itemData.subtotal_cents]
+                `INSERT INTO order_items
+         (order_id, product_id, qty, unit_price_cents, subtotal_cents)
+         VALUES (?, ?, ?, ?, ?)`,
+                [
+                    orderId,
+                    item.product_id,
+                    item.qty,
+                    item.unit_price_cents,
+                    item.subtotal_cents,
+                ]
             );
         }
 
@@ -102,21 +102,30 @@ export const createOrder = async (req, res) => {
         }
 
         await db.query('COMMIT');
-        return res.status(201).json({
+
+        res.status(201).json({
             id: orderId,
             customer_id,
             status: 'CREATED',
             total_cents,
-            items: orderItemsData
+            items: orderItemsData,
         });
-
     } catch (error) {
         await db.query('ROLLBACK');
-        return res.status(400).json({ error: error.message });
+        return res.status(error.status || 400).json({
+            error: error.message || 'Error al crear orden'
+        });
     }
-}
+};
+
 
 export const confirmOrder = async (req, res) => {
+
+    const headers = validate(idempotencyHeaderSchema, req.headers, res);
+    if (!headers) return;
+
+    const params = validate(orderIdParamSchema, req.params, res);
+    if (!params) return;
 
     const idempotencyKey = req.headers['x-idempotency-key'];
 
@@ -235,6 +244,10 @@ export const confirmOrder = async (req, res) => {
 }
 
 export const cancelOrder = async (req, res) => {
+
+    const params = validate(orderIdParamSchema, req.params, res);
+    if (!params) return;
+
     const orderId = req.params.id;
 
     if (!orderId) {
@@ -278,6 +291,10 @@ export const cancelOrder = async (req, res) => {
 
 export const getOrder = async (req, res) => {
     try {
+
+        const params = validate(orderIdParamSchema, req.params, res);
+        if (!params) return;
+
         const orderId = req.params.id;
 
         if (!orderId) {
@@ -313,6 +330,9 @@ export const getOrder = async (req, res) => {
 
 
 export const listOrders = async (req, res) => {
+    const query = validate(listOrdersQuerySchema, req.query, res);
+    if (!query) return;
+
     const { status, from, to, cursor, limit = 20 } = req.query;
 
     const params = [];

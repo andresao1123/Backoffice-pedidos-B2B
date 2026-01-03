@@ -1,7 +1,7 @@
 {
   "name": "lambda-orchestrator",
   "version": "1.0.0",
-  "main": "src/handler.js", 
+  "main": "src/handler.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "serverless offline --host 0.0.0.0 --noPrependStageInUrl",
@@ -10,10 +10,11 @@
   "type": "module",
   "dependencies": {
     "axios": "^1.7.0",
-    "uuid": "^11.0.0"
+    "uuid": "^11.0.0",
+    "zod": "^4.3.4"
   },
   "devDependencies": {
     "serverless": "^3.40.0",
-    "serverless-offline": "^13.0.0" 
+    "serverless-offline": "^13.0.0"
   }
 }

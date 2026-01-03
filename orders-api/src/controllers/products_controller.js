@@ -1,6 +1,11 @@
 import { db } from "../db.js";
+import { validate } from '../utils/validate.js';
+import { getProductsQuerySchema, productIdParamSchema, createProductSchema, updateProductSchema } from '../validators/products_schema.js';
 
 export const getProducts = async (req, res) => {
+
+    const query = validate(getProductsQuerySchema, req.query, res);
+    if (!query) return;
 
     const { search, cursor, limit = 20 } = req.query;
 
@@ -43,6 +48,10 @@ export const getProducts = async (req, res) => {
 };
 
 export const getProduct = async (req, res) => {
+
+    const params = validate(productIdParamSchema, req.params, res);
+    if (!params) return;
+
     const productId = req.params.id;
 
     if (!productId) {
@@ -71,6 +80,10 @@ export const getProduct = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
+
+    const body = validate(createProductSchema, req.body, res);
+    if (!body) return;
+
     const { name, sku, price_cents, stock } = req.body;
     if (!name || !sku || price_cents == null || stock == null) {
         return res.status(400).json({
@@ -127,6 +140,15 @@ export const createProduct = async (req, res) => {
 };
 
 export const updateProduct = async (req, res) => {
+
+
+    const params = validate(productIdParamSchema, req.params, res);
+    if (!params) return;
+
+    const body = validate(updateProductSchema, req.body, res);
+    if (!body) return;
+
+
     const productId = Number(req.params.id);
     const { price_cents, stock } = req.body;
 

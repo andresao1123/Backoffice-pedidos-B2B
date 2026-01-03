@@ -1,10 +1,15 @@
 import { db } from '../db.js';
+import { getCustomersQuerySchema, customerIdParamSchema, createCustomerSchema, updateCustomerSchema } from '../validators/customer_schema.js';
+import { validate } from '../utils/validate.js';
 
 export const getCustomers = async (req, res) => {
-    const { search, cursor, limit = 20 } = req.query;
+    const query = validate(getCustomersQuerySchema, req.query, res);
+    if (!query) return;
+
+    const { search, cursor, limit } = query;
 
     const params = [];
-    let where = 'WHERE 1=1';
+    let where = 'WHERE deleted_at IS NULL';
 
     if (search) {
         where += ' AND name LIKE ?';
@@ -13,210 +18,118 @@ export const getCustomers = async (req, res) => {
 
     if (cursor) {
         where += ' AND id > ?';
-        params.push(Number(cursor));
-    }
-
-    const limitNumber = Number(limit);
-    if (isNaN(limitNumber) || limitNumber <= 0) {
-        return res.status(400).json({ error: 'limit debe ser un número positivo' });
+        params.push(cursor);
     }
 
     const [rows] = await db.query(
-        `SELECT * FROM customers ${where} AND deleted_at IS NULL 
-     ORDER BY id ASC LIMIT ?`,
-        [...params, limitNumber + 1] // Pedimos uno extra
+        `
+    SELECT * FROM customers
+    ${where}
+    ORDER BY id ASC
+    LIMIT ?
+    `,
+        [...params, limit + 1]
     );
 
-    const hasMore = rows.length > limitNumber;
-    const customers = hasMore ? rows.slice(0, limitNumber) : rows;
-
+    const hasMore = rows.length > limit;
+    const customers = hasMore ? rows.slice(0, limit) : rows;
     const nextCursor = hasMore ? customers[customers.length - 1].id : null;
 
-    res.json({
-        data: customers,
-        next_cursor: nextCursor,
-    });
-}
+    res.json({ data: customers, next_cursor: nextCursor });
+};
 
 export const createCustomer = async (req, res) => {
-    const { name, email, phone } = req.body;
-    if (!name || !email || !phone) {
-        return res.status(400).json({
-            success: false,
-            error: 'name, email y phone son requeridos'
-        });
-    }
+    const body = validate(createCustomerSchema, req.body, res);
+    if (!body) return;
+
+    const { name, email, phone } = body;
 
     try {
         const [result] = await db.query(
-            `INSERT INTO customers (name, email, phone)
-       VALUES (?, ?, ?)`,
+            `INSERT INTO customers (name, email, phone) VALUES (?, ?, ?)`,
             [name, email, phone]
         );
 
-        return res.status(201).json({
+        res.status(201).json({
             success: true,
-            data: {
-                id: result.insertId,
-                name,
-                email,
-                phone
-            }
+            data: { id: result.insertId, name, email, phone },
         });
 
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(409).json({
-                success: false,
-                error: 'Email ya existe'
-            });
+            return res.status(409).json({ error: 'Email ya existe' });
         }
-
-        return res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
-}
+};
 
 export const getCustomer = async (req, res) => {
-    const customerId = req.params.id;
-
-    if (!customerId) {
-        return res.status(400).json({
-            success: false,
-            error: 'Customer ID is required'
-        });
-    }
+    const params = validate(customerIdParamSchema, req.params, res);
+    if (!params) return;
 
     const [rows] = await db.query(
-        'SELECT * FROM customers WHERE id = ? and deleted_at IS NULL',
-        [customerId]
+        'SELECT * FROM customers WHERE id = ? AND deleted_at IS NULL',
+        [params.id]
     );
 
-    if (rows.length === 0) {
-        return res.status(404).json({
-            success: false,
-            error: 'Customer not found'
-        });
+    if (!rows.length) {
+        return res.status(404).json({ error: 'Customer not found' });
     }
 
-    const customer = rows[0];
-    delete customer.deleted_at;
 
-    res.json({
-        success: true,
-        data: customer
-    });
+    res.json({ success: true, data: rows[0] });
 };
 
 export const updateCustomer = async (req, res) => {
-    const customerId = Number(req.params.id);
-    const { name, email, phone } = req.body;
+    const params = validate(customerIdParamSchema, req.params, res);
+    if (!params) return;
 
-    if (!Number.isInteger(customerId)) {
-        return res.status(400).json({ error: 'ID inválido' });
+    const body = validate(updateCustomerSchema, req.body, res);
+    if (!body) return;
+
+    const fields = Object.keys(body).map(k => `${k} = ?`);
+    const values = Object.values(body);
+
+    const [result] = await db.query(
+        `
+    UPDATE customers
+    SET ${fields.join(', ')}
+    WHERE id = ?
+    `,
+        [...values, params.id]
+    );
+
+    if (!result.affectedRows) {
+        return res.status(404).json({ error: 'Customer not found' });
     }
 
-    if (name == null && email == null && phone == null) {
-        return res.status(400).json({
-            error: 'Debe enviar name, email y/o phone'
-        });
-    }
+    const [[customer]] = await db.query(
+        'SELECT * FROM customers WHERE id = ?',
+        [params.id]
+    );
 
-    const fields = [];
-    const values = [];
-
-    if (name != null) {
-        if (typeof name !== 'string' || name.trim() === '') {
-            return res.status(400).json({
-                error: 'name debe ser una cadena no vacía'
-            });
-        }
-        fields.push('name = ?');
-        values.push(name);
-    }
-
-    if (email != null) {
-        if (typeof email !== 'string' || email.trim() === '') {
-            return res.status(400).json({
-                error: 'email debe ser una cadena no vacía'
-            });
-        }
-        fields.push('email = ?');
-        values.push(email);
-    }
-
-    if (phone != null) {
-        if (typeof phone !== 'string' || phone.trim() === '') {
-            return res.status(400).json({
-                error: 'phone debe ser una cadena no vacía'
-            });
-        }
-        fields.push('phone = ?');
-        values.push(phone);
-    }
-
-    try {
-        const [result] = await db.query(
-            `
-      UPDATE customers
-      SET ${fields.join(', ')}
-      WHERE id = ?
-      `,
-            [...values, customerId]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Customer not found' });
-        }
-
-        const [[customer]] = await db.query(
-            'SELECT * FROM customers WHERE id = ?',
-            [customerId]
-        );
-
-        return res.json({
-            success: true,
-            data: customer
-        });
-
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
+    res.json({ success: true, data: customer });
 };
 
 export const deleteCustomer = async (req, res) => {
-    const customerId = Number(req.params.id);
+    const params = validate(customerIdParamSchema, req.params, res);
+    if (!params) return;
 
-    if (!Number.isInteger(customerId)) {
-        return res.status(400).json({ error: 'ID inválido' });
-    }
+    const [result] = await db.query(
+        `
+    UPDATE customers
+    SET deleted_at = NOW()
+    WHERE id = ? AND deleted_at IS NULL
+    `,
+        [params.id]
+    );
 
-    try {
-        const [result] = await db.query(
-            `
-            UPDATE customers
-            SET deleted_at = NOW()
-            WHERE id = ?
-              AND deleted_at IS NULL
-            `,
-            [customerId]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                error: 'Customer not found or already deleted'
-            });
-        }
-
-        return res.json({
-            success: true,
-            data: { id: customerId }
+    if (!result.affectedRows) {
+        return res.status(404).json({
+            error: 'Customer not found or already deleted',
         });
-
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
     }
+
+    res.json({ success: true, data: { id: params.id } });
 };
 

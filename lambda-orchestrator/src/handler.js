@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+import { validateLambda } from './utils/validateLambda.js';
+import { createAndConfirmOrderSchema } from './validators/orchestrator_schema.js';
 
 const CUSTOMERS_API = process.env.CUSTOMERS_API_BASE || 'http://localhost:3001';
 const ORDERS_API = process.env.ORDERS_API_BASE || 'http://localhost:3002';
@@ -8,6 +10,18 @@ const SERVICE_TOKEN = process.env.SERVICE_TOKEN || 'secret-service-token';
 export const createAndConfirmOrder = async (event) => {
     try {
         const body = JSON.parse(event.body);
+
+        const validation = validateLambda(createAndConfirmOrderSchema, body);
+        if (validation.error) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    success: false,
+                    error: validation.error,
+                }),
+            };
+        }
+
         const { customer_id, items, idempotency_key } = body;
         let { correlation_id } = body;
 
@@ -54,7 +68,6 @@ export const createAndConfirmOrder = async (event) => {
                     }
                 }
             );
-
             customer = customerResponse.data.data;
         } catch (error) {
             return {
