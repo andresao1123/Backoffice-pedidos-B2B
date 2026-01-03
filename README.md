@@ -167,7 +167,7 @@ Configurar AWS credentials:
 
 ```bash
 aws configure
-# Ingresar: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, region
+# Ingresar: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, region, output format (json,yaml, text, table)
 ```
 
 Deploy a AWS:
@@ -312,3 +312,4 @@ export $(cat .env | xargs)
 #volver a deployar con npm run deploy
 
 ```
+
