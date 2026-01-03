@@ -54,7 +54,7 @@ export const createAndConfirmOrder = async (event) => {
                     }
                 }
             );
-            console.log(customerResponse.data.data)
+
             customer = customerResponse.data.data;
         } catch (error) {
             return {
@@ -83,7 +83,7 @@ export const createAndConfirmOrder = async (event) => {
                 {
                     headers: {
                         'Authorization': `Bearer ${SERVICE_TOKEN}`,
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     }
                 }
             );
@@ -116,8 +116,11 @@ export const createAndConfirmOrder = async (event) => {
                     }
                 }
             );
-            console.log(confirmResponse)
             confirmedOrder = confirmResponse.data;
+
+            if (confirmedOrder.id !== order.id) {
+                console.log(`[${correlation_id}] Info: Se utilizó la orden original ${confirmedOrder.id}. La orden duplicada ${order.id} fue descartada.`);
+            }
         } catch (error) {
             try {
                 await axios.post(`${ORDERS_API}/orders/${order.id}/cancel`);

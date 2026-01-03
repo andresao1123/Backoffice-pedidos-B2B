@@ -8,7 +8,6 @@ export const internalAuth = (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    console.log(token);
 
     if (token !== process.env.SERVICE_TOKEN) {
         return res.status(403).json({ error: 'Forbidden' });

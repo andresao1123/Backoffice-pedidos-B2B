@@ -129,14 +129,24 @@ export const confirmOrder = async (req, res) => {
 
     const [rows] = await db.query(
         `SELECT * FROM idempotency_keys 
-         WHERE \`key\` = ? AND target_type = 'order_confirm' AND target_id = ?`,
-        [idempotencyKey, orderId]
+     WHERE \`key\` = ? AND target_type = 'order_confirm'`,
+        [idempotencyKey]
     );
 
     const existingKey = rows[0];
 
     if (existingKey && existingKey.status === 'SUCCESS') {
-        const cachedResponse = JSON.parse(existingKey.response_body);
+        if (existingKey.target_id !== parseInt(orderId)) {
+            console.log(`Detectado reintento con nuevo ID (${orderId}). Cancelando el duplicado...`);
+            try {
+                await performOrderCancellation(orderId);
+            } catch (err) {
+                console.error("Error al cancelar orden duplicada:", err.message);
+            }
+        }
+        const cachedResponse = typeof existingKey.response_body === 'string'
+            ? JSON.parse(existingKey.response_body)
+            : existingKey.response_body;
         return res.status(200).json(cachedResponse);
     }
     if (existingKey && existingKey.status === 'FAILED') {
@@ -185,7 +195,7 @@ export const confirmOrder = async (req, res) => {
             ['CONFIRMED', orderId]
         );
 
-        const items = await db.query(
+        const [items] = await db.query(
             'SELECT * FROM order_items WHERE order_id = ?',
             [orderId]
         );
@@ -258,36 +268,10 @@ export const cancelOrder = async (req, res) => {
         return res.status(400).json({ error: 'Orden ya está cancelada' });
     }
 
-    await db.query('START TRANSACTION');
-
     try {
-        const items = await db.query(
-            'SELECT product_id, qty FROM order_items WHERE order_id = ?',
-            [orderId]
-        );
-
-        for (const item of items) {
-            await db.query(
-                'UPDATE products SET stock = stock + ? WHERE id = ?',
-                [item.qty, item.product_id]
-            );
-        }
-
-        await db.query(
-            'UPDATE orders SET status = ? WHERE id = ?',
-            ['CANCELED', orderId]
-        );
-
-        await db.query('COMMIT');
-
-        return res.status(200).json({
-            id: orderId,
-            status: 'CANCELED',
-            message: 'Orden cancelada y stock restaurado'
-        });
-
+        await performOrderCancellation(orderId);
+        return res.status(200).json({ id: orderId, status: 'CANCELED' });
     } catch (error) {
-        await db.query('ROLLBACK');
         return res.status(500).json({ error: error.message });
     }
 }
@@ -376,5 +360,33 @@ export const listOrders = async (req, res) => {
         data: orders,
         next_cursor: nextCursor
     });
+};
+
+const performOrderCancellation = async (orderId) => {
+    await db.query('START TRANSACTION');
+    try {
+        const [items] = await db.query(
+            'SELECT product_id, qty FROM order_items WHERE order_id = ?',
+            [orderId]
+        );
+
+        for (const item of items) {
+            await db.query(
+                'UPDATE products SET stock = stock + ? WHERE id = ?',
+                [item.qty, item.product_id]
+            );
+        }
+
+        await db.query(
+            'UPDATE orders SET status = ? WHERE id = ?',
+            ['CANCELED', orderId]
+        );
+
+        await db.query('COMMIT');
+        return { success: true };
+    } catch (error) {
+        await db.query('ROLLBACK');
+        throw error;
+    }
 };
 
