@@ -25,7 +25,7 @@ export const createOrder = async (req, res) => {
             }
         );
     } catch {
-        return res.status(502).json({ error: 'Customers service unavailable' });
+        return res.status(502).json({ error: 'Servicio de clientes no disponible' });
     }
 
     if (!customerResponse.ok) {
@@ -120,7 +120,6 @@ export const createOrder = async (req, res) => {
 
 
 export const confirmOrder = async (req, res) => {
-
     const result = idempotencyHeaderSchema.safeParse(req.headers);
     if (!result.success) {
         return res.status(422).json({ error: 'X-Idempotency-Key requerido' });
@@ -244,15 +243,10 @@ export const confirmOrder = async (req, res) => {
 }
 
 export const cancelOrder = async (req, res) => {
-
     const params = validate(orderIdParamSchema, req.params, res);
     if (!params) return;
 
     const orderId = params.id;
-
-    if (!orderId) {
-        return res.status(400).json({ error: 'ID de orden requerido' });
-    }
 
     const [rows] = await db.query(
         'SELECT * FROM orders WHERE id = ?',
@@ -290,42 +284,35 @@ export const cancelOrder = async (req, res) => {
 }
 
 export const getOrder = async (req, res) => {
-    try {
+    const params = validate(orderIdParamSchema, req.params, res);
+    if (!params) return;
 
-        const params = validate(orderIdParamSchema, req.params, res);
-        if (!params) return;
+    const orderId = params.id;
 
-        const orderId = params.id;
-
-        if (!orderId) {
-            return res.status(400).json({ error: 'ID de orden requerido' });
-        }
-
-
-        const [orders] = await db.query(
-            'SELECT * FROM orders WHERE id = ?',
-            [orderId]
-        );
-
-        if (!orders || orders.length === 0) {
-            return res.status(404).json({ error: 'Orden no encontrada' });
-        }
-
-        const order = orders[0];
-
-        const [items] = await db.query(
-            'SELECT * FROM order_items WHERE order_id = ?',
-            [orderId]
-        );
-
-        order.items = items || [];
-
-        return res.status(200).json(order);
-
-    } catch (error) {
-        console.error('Error al obtener orden:', error);
-        return res.status(500).json({ error: 'Error interno del servidor' });
+    if (!orderId) {
+        return res.status(400).json({ error: 'ID de orden requerido' });
     }
+
+
+    const [orders] = await db.query(
+        'SELECT * FROM orders WHERE id = ?',
+        [orderId]
+    );
+
+    if (!orders || orders.length === 0) {
+        return res.status(404).json({ error: 'Orden no encontrada' });
+    }
+
+    const order = orders[0];
+
+    const [items] = await db.query(
+        'SELECT * FROM order_items WHERE order_id = ?',
+        [orderId]
+    );
+
+    order.items = items || [];
+
+    return res.status(200).json(order);
 };
 
 
@@ -365,18 +352,18 @@ export const listOrders = async (req, res) => {
 
     const [orders] = await db.query(
         `
-    SELECT * FROM orders
-    ${where}
-    ORDER BY id ASC
-    LIMIT ?
-    `,
+        SELECT * FROM orders
+        ${where}
+        ORDER BY id ASC
+        LIMIT ?
+        `,
         [...params, limitNumber]
     );
 
     const nextCursor =
         orders.length > 0 ? orders[orders.length - 1].id : null;
 
-    res.json({
+    res.status(200).json({
         data: orders,
         next_cursor: nextCursor
     });
