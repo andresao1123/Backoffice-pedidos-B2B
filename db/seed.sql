@@ -1,63 +1,59 @@
 use orders_db;
 
-INSERT INTO customers (name, email, phone) VALUES
-('ACME Corporation', 'compras@acme.com', '+593-2-2345678'),
-('Tech Solutions S.A.', 'pedidos@techsolutions.com.ec', '+593-2-2456789'),
-('Distribuidora del Pacífico', 'ventas@dispacifico.ec', '+593-4-2567890'),
-('Comercial Andina Ltda.', 'admin@andina.com.ec', '+593-2-2678901'),
-('Importadora Quito S.A.', 'importaciones@quito.ec', '+593-2-2789012'),
-('Supermercados El Ahorro', 'compras@elahorro.ec', '+593-4-2890123'),
-('Ferretería Industrial', 'pedidos@ferrind.com', '+593-7-2901234'),
-('Tiendas La Económica', 'ordenes@laeconomica.ec', '+593-2-3012345');
+INSERT INTO customers (name, email, phone, created_at) VALUES
+('ACME Corporation', 'compras@acme.com', '+593-2-2345678', DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('Tech Solutions S.A.', 'pedidos@techsolutions.com.ec', '+593-2-2456789', DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('Distribuidora del Pacífico', 'ventas@dispacifico.ec', '+593-4-2567890', DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('Comercial Andina Ltda.', 'admin@andina.com.ec', '+593-2-2678901', DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('Importadora Quito S.A.', 'importaciones@quito.ec', '+593-2-2789012', DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('Supermercados El Ahorro', 'compras@elahorro.ec', '+593-4-2890123', DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('Ferretería Industrial', 'pedidos@ferrind.com', '+593-7-2901234', DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('Tiendas La Económica', 'ordenes@laeconomica.ec', '+593-2-3012345', DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY));
 
 
-
-INSERT INTO products (sku, name, price_cents, stock) VALUES
-('ELEC-LAP-001', 'Laptop Dell Inspiron 15', 89990, 25),
-('ELEC-MON-001', 'Monitor LG 24" Full HD', 25900, 40),
-('ELEC-TEC-001', 'Teclado Mecánico Logitech', 12900, 60),
-('ELEC-MOU-001', 'Mouse Inalámbrico HP', 3500, 100),
-('ELEC-WEB-001', 'Webcam Logitech C920', 8900, 35),
-('ELEC-AUD-001', 'Audífonos Bluetooth Sony', 15900, 50),
-('ELEC-TAB-001', 'Tablet Samsung Galaxy Tab A8', 32900, 20),
-('ELEC-IMP-001', 'Impresora Multifunción Epson', 28900, 15);
-
-
-INSERT INTO products (sku, name, price_cents, stock) VALUES
-('OFIC-SIL-001', 'Silla Ergonómica Oficina', 18900, 30),
-('OFIC-ESC-001', 'Escritorio Ejecutivo 150x60cm', 35900, 12),
-('OFIC-ARC-001', 'Archivador Metálico 4 Gavetas', 22900, 18),
-('OFIC-PIZ-001', 'Pizarra Acrílica 120x80cm', 8900, 25),
-('OFIC-LAM-001', 'Lámpara LED Escritorio', 4500, 45),
-('OFIC-PAP-001', 'Papel Bond A4 (Resma 500 hojas)', 650, 200);
+INSERT INTO products (sku, name, price_cents, stock, created_at) VALUES
+('ELEC-LAP-001', 'Laptop Dell Inspiron 15', 89990, 25, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('ELEC-MON-001', 'Monitor LG 24" Full HD', 25900, 40, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('ELEC-TEC-001', 'Teclado Mecánico Logitech', 12900, 60, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('ELEC-MOU-001', 'Mouse Inalámbrico HP', 3500, 100, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('ELEC-WEB-001', 'Webcam Logitech C920', 8900, 35, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('ELEC-AUD-001', 'Audífonos Bluetooth Sony', 15900, 50, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('ELEC-TAB-001', 'Tablet Samsung Galaxy Tab A8', 32900, 20, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('ELEC-IMP-001', 'Impresora Multifunción Epson', 28900, 15, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY));
 
 
-INSERT INTO products (sku, name, price_cents, stock) VALUES
-('SUMI-BOL-001', 'Bolígrafos Azules (Caja 50 unidades)', 1200, 150),
-('SUMI-CUA-001', 'Cuaderno Universitario 100 hojas', 350, 300),
-('SUMI-CAR-001', 'Carpetas Manila Tamaño Oficio (Pack 25)', 890, 100),
-('SUMI-GRA-001', 'Grapadora Industrial', 2500, 40),
-('SUMI-TIJ-001', 'Tijeras Oficina Acero Inoxidable', 450, 80),
-('SUMI-CIN-001', 'Cinta Adhesiva Transparente (Pack 6)', 680, 120);
+INSERT INTO products (sku, name, price_cents, stock, created_at) VALUES
+('OFIC-SIL-001', 'Silla Ergonómica Oficina', 18900, 30, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('OFIC-ESC-001', 'Escritorio Ejecutivo 150x60cm', 35900, 12, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('OFIC-ARC-001', 'Archivador Metálico 4 Gavetas', 22900, 18, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('OFIC-PIZ-001', 'Pizarra Acrílica 120x80cm', 8900, 25, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('OFIC-LAM-001', 'Lámpara LED Escritorio', 4500, 45, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('OFIC-PAP-001', 'Papel Bond A4 (Resma 500 hojas)', 650, 200, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY));
+
+INSERT INTO products (sku, name, price_cents, stock, created_at) VALUES
+('SUMI-BOL-001', 'Bolígrafos Azules (Caja 50 unidades)', 1200, 150, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('SUMI-CUA-001', 'Cuaderno Universitario 100 hojas', 350, 300, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('SUMI-CAR-001', 'Carpetas Manila Tamaño Oficio (Pack 25)', 890, 100, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('SUMI-GRA-001', 'Grapadora Industrial', 2500, 40, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('SUMI-TIJ-001', 'Tijeras Oficina Acero Inoxidable', 450, 80, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('SUMI-CIN-001', 'Cinta Adhesiva Transparente (Pack 6)', 680, 120, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY));
+
+INSERT INTO products (sku, name, price_cents, stock, created_at) VALUES
+('LIMP-DES-001', 'Desinfectante Multiusos 5L', 1890, 60, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('LIMP-JAB-001', 'Jabón Líquido Antibacterial 4L', 1590, 75, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('LIMP-PAP-002', 'Papel Higiénico Institucional (Pack 24)', 2890, 40, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('LIMP-SER-001', 'Servilletas de Papel (Pack 500)', 890, 90, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('LIMP-BOL-002', 'Bolsas de Basura 55 Galones (Pack 50)', 2190, 55, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY));
+
+INSERT INTO products (sku, name, price_cents, stock, created_at) VALUES
+('ELEC-CAM-001', 'Cámara Seguridad IP WiFi', 12900, 3, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('OFIC-CAL-001', 'Calculadora Científica Casio', 4500, 2, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('SUMI-MEM-001', 'USB Flash Drive 64GB', 1890, 1, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY));
 
 
-INSERT INTO products (sku, name, price_cents, stock) VALUES
-('LIMP-DES-001', 'Desinfectante Multiusos 5L', 1890, 60),
-('LIMP-JAB-001', 'Jabón Líquido Antibacterial 4L', 1590, 75),
-('LIMP-PAP-002', 'Papel Higiénico Institucional (Pack 24)', 2890, 40),
-('LIMP-SER-001', 'Servilletas de Papel (Pack 500)', 890, 90),
-('LIMP-BOL-002', 'Bolsas de Basura 55 Galones (Pack 50)', 2190, 55);
-
-
-INSERT INTO products (sku, name, price_cents, stock) VALUES
-('ELEC-CAM-001', 'Cámara Seguridad IP WiFi', 12900, 3),
-('OFIC-CAL-001', 'Calculadora Científica Casio', 4500, 2),
-('SUMI-MEM-001', 'USB Flash Drive 64GB', 1890, 1);
-
-
-INSERT INTO products (sku, name, price_cents, stock) VALUES
-('ELEC-PRO-001', 'Proyector BenQ Full HD', 89900, 0),
-('OFIC-SOF-001', 'Sofá Ejecutivo 3 Puestos', 125900, 0);
+INSERT INTO products (sku, name, price_cents, stock, created_at) VALUES
+('ELEC-PRO-001', 'Proyector BenQ Full HD', 89900, 0, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY)),
+('OFIC-SOF-001', 'Sofá Ejecutivo 3 Puestos', 125900, 0, DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*365) DAY));
 
 
 INSERT INTO orders (customer_id, status, total_cents, created_at) VALUES

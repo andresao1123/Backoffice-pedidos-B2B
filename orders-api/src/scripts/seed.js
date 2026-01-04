@@ -20,7 +20,6 @@ async function seed() {
                 }
                 await db.query(query);
             } catch (err) {
-                // Ignore duplicate entry errors for idempotency
                 if (err.code === 'ER_DUP_ENTRY') {
                     console.log('Skipping duplicate entry...');
                 } else {

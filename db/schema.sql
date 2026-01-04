@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS customers(
     `name` varchar(100) not null,
     email varchar(100) unique not null,
     phone varchar(100) not null,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     deleted_at DATETIME null
 );
 
@@ -15,7 +16,8 @@ CREATE TABLE IF NOT EXISTS products(
    `name` varchar(100) not null,
    sku  varchar(12) unique not null,
    price_cents int not null,
-   stock int not null
+   stock int not null,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS `orders`(
