@@ -13,7 +13,7 @@ WORKDIR /app
 RUN apk add --no-cache curl
 
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 
@@ -30,4 +30,4 @@ ENV PORT=3001
 HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3001/health || exit 1
 
-CMD ["node", "src/index.js"]
+CMD ["npm", "start"]
